@@ -1,0 +1,14 @@
+# GitHub Copilot / Codex Instructions
+
+Before performing any tasks, analyzing the codebase, or writing code, you MUST read and strictly adhere to the project rules and constraints defined in the root `AGENTS.md` file:
+- File path: `AGENTS.md`
+
+These rules cover:
+1. Strict Hexagonal Architecture
+2. Memory Layout & Concurrency
+3. Observability, Security & Errors
+4. Performance Benchmarking
+5. API Stability & Open Source
+6. AI Behavior Constraints
+
+Always check and follow the rules in `AGENTS.md` as the absolute truth for this project.
