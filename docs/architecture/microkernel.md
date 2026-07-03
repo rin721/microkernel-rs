@@ -66,8 +66,11 @@ pub trait AppLifecycle {
 系统中的业务交互以插件的形式组织：
 
 *   **生命周期管理**：`Load` (加载/依赖声明), `Start` (启动监听), `Destroy` (资源销毁)。
+*   **依赖自动映射 (Auto-Mapping / Dependency Injection)**：
+    *   **严禁手动拉取**：严禁插件在运行期主动去 `kernel` 容器中通过 `get_service()` 等方法寻找依赖，这会造成硬编码耦合。
+    *   **声明式注入**：所有依赖的外部接口，必须在插件结构体定义时通过宏 (如 `#[inject]`) 或生命周期 Context 静态声明。Host Proxy 会在实例化插件前自动完成依赖的寻找与注入映射。
 *   **通信与共享协议**：
-    *   **接口/Trait**：插件间通过明确定义的 Rust Trait（动态分发 `Arc<dyn Trait>` 优先，热路径考虑静态）进行交互。
+    *   **接口/Trait**：插件间通过明确定义的 Rust Trait（动态分发 `Arc<dyn Trait>` 优先）进行交互。
     *   **事件总线 (Event Bus)**：用于解耦不同插件间的异步消息传递。
 
 ## 4. 实践示例
