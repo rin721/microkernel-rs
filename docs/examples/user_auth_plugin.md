@@ -11,7 +11,7 @@
 ## 2. 注册与装配流程 (自动映射式设计)
 
 ### 2.1 声明式依赖注入 (Load & 映射阶段)
-系统采用基于宏的声明式注入（或者 `Context` 自动装配），插件无需使用 `kernel.get_service()`。在插件结构体定义时，直接通过 `#[inject]` 属性标记该字段为一个依赖，Host Proxy 会在实例化插件本体时**自动映射**并注入该能力。
+系统采用基于宏的声明式注入（或者 `Context` 自动装配），插件无需使用 `kernel.get_service()`。在插件结构体定义时，直接通过 `#[inject]` 属性标记该字段为一个依赖，**系统本体**会在实例化该插件时**自动映射**并注入该能力。
 
 ```rust
 use std::sync::Arc;
@@ -19,10 +19,10 @@ use crate::kernel::Plugin;
 use crate::apps::database::DatabaseConnection;
 use crate::apps::cache::CacheClient;
 
-/// 用户权限插件本体
+/// 用户权限插件
 #[derive(Plugin)]
 pub struct UserAuthPlugin {
-    // 自动映射：内核识别到此字段，自动从依赖池注入通用数据库库的能力接口
+    // 自动映射：系统本体识别到此字段，自动从依赖池注入通用数据库库的能力接口
     #[inject]
     db: Arc<dyn DatabaseConnection>,
     
