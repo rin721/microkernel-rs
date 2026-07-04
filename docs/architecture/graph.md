@@ -48,7 +48,7 @@ graph TD
     %% 插件注册
     UserAuth -.->|实现 Trait/注册| PluginRegistry
     OtherPlugin -.->|实现 Trait/注册| PluginRegistry
-    PluginRegistry -.->|依赖注入| AppRuntime
+    PluginRegistry -.->|静态环境绑定| AppRuntime
 
     %% 跨插件通信
     UserAuth <-->|Arc&lt;dyn Trait&gt; / RPC| OtherPlugin

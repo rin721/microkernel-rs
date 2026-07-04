@@ -46,9 +46,9 @@ kernel/core/src/
 ├── config/                 # 配置子域
 │   ├── loader.rs           # 仅负责从文件/系统环境读取
 │   └── parser.rs           # 仅负责反序列化映射
-├── registry/               # 注入枢纽子域
-│   ├── container.rs        # 仅负责管理依赖池的存取状态
-│   └── injector.rs         # 仅负责执行自动映射和注入运算
+├── env/                    # 环境约束子域
+│   ├── system_env.rs       # 仅负责定义 SystemEnv Trait 及关联类型
+│   └── builder.rs          # 仅负责环境对象的静态构建
 ├── lifecycle/              # 流程编排子域
 │   ├── bootstrap.rs        # 仅负责启动阶段 (Load -> Start) 的串行逻辑
 │   └── teardown.rs         # 仅负责销毁阶段 (Destroy) 的释放逻辑
@@ -65,7 +65,7 @@ kernel/contracts/src/
 │   └── plugin_hook.rs      # 细化：定义 Plugin 的生命周期 Trait
 └── errors/                 
     ├── app_error.rs        # 规范化：通用应用抛出的统一 Enum
-    └── kernel_error.rs     # 规范化：内核崩溃/注入失败的统一 Enum
+    └── kernel_error.rs     # 规范化：内核崩溃/加载失败的统一 Enum
 ```
 
 ### 2.3 基础设施通用应用 (以 `storage_app` 为例) 规范骨架
