@@ -1,31 +1,43 @@
 # 微内核核心架构设计 (Microkernel Architecture)
 
-本项目采用 Rust 后端微内核架构设计，其核心思想是“应用依赖组装注入”和“插件化”。
+本项目采用 Rust 后端微内核架构设计，其核心思想是“应用依赖组装注入”和“插件化”。为了追求极致的内存安全与零成本抽象（Zero-Cost Abstraction），系统全面采用**泛型关联类型与环境约束 (Environment Trait)** 的静态分发设计，摒弃了传统的运行时动态依赖注入。
 
 ## 1. 架构目标
 
 核心目标是将系统划分为“内核 (Kernel)”和“插件/应用 (Plugins/Apps)”两部分：
-*   **微内核 (Host Proxy)**：负责依赖组装、生命周期管理、配置分发、统一启停以及资源释放。内核掌握所有接口定义的绝对话语权。
-*   **插件与应用**：负责具体的业务逻辑，必须遵守内核定义的接口规范才能接入系统。
+*   **微内核 (Host Proxy)**：负责定义全局的环境约束（Environment），并负责组装依赖、管理应用生命周期。内核掌握所有接口定义的绝对话语权。
+*   **插件与应用**：负责具体的业务逻辑，必须遵守内核定义的接口规范，并通过泛型绑定到特定的环境中才能运行。
 
-## 2. 核心设计：应用依赖组装注入
+## 2. 核心设计：环境约束与静态生命周期
 
-每个应用（如数据库应用、缓存服务等）都需要由内核进行完整的生命周期与依赖管理。
+每个应用（如数据库应用、缓存服务等）都需要由内核进行完整的生命周期与依赖管理。为了达到极限并发性能，系统不使用 `Arc<dyn Trait>` 进行动态多态分发。
 
-### 2.1 核心约束：通用应用生命周期契约 (Archetype Trait)
+### 2.1 核心环境定义 (Environment Trait)
 
-**极其重要**：应用钩子（Hooks）都是微内核在 `kernel/lifecycle` 层专门定义的**核心接口契约**。它们的作用是“约束并代理新增应用通用库”，**绝对不应该由具体应用自身来定义或更改**。所有试图接入内核的通用库都必须实现此 Trait。
+系统定义了一个全局的 `SystemEnv` Trait，它像一个静态的服务目录，包含了所有基础设施抽象接口的关联类型。
+
+```rust
+/// 全局环境约束定义，要求所有依赖项在编译期静态决议
+pub trait SystemEnv: Clone + Send + Sync + 'static {
+    type Db: DatabaseConnection;     // 静态决议的具体数据库类型
+    type Cache: CacheService;        // 静态决议的具体缓存类型
+    // ... 其他基础设施类型约束
+}
+```
+
+### 2.2 核心约束：通用应用生命周期契约 (Archetype Trait)
+
+应用钩子（Hooks）都是微内核在 `kernel/lifecycle` 层专门定义的核心接口契约。与传统 DI 框架不同，插件结构体必须带有环境泛型 `<E: SystemEnv>`。
 
 ```rust
 use async_trait::async_trait;
 
 /// 通用应用生命周期契约 (由系统内核定义并强制约束)
 #[async_trait]
-pub trait Archetype {
+pub trait Archetype<E: SystemEnv> {
     type Config;
 
     /// 1. 为通用库提供默认配置接口
-    /// 系统本体会通过 `启用字段` 判断是否自动代理调用此模块。
     fn default_config() -> Self::Config;
 
     /// 2. 实例创建前接口 (内核调用)
@@ -35,73 +47,42 @@ pub trait Archetype {
     async fn post_create(&self) -> Result<(), AppError>;
 
     /// 4. 实例挂载前接口 (内核调用)
-    async fn pre_mount(&self) -> Result<(), AppError>;
+    async fn pre_mount(&self, env: &E) -> Result<(), AppError>;
 
     /// 5. 实例挂载后接口 (内核调用)
-    async fn post_mount(&self) -> Result<(), AppError>;
+    async fn post_mount(&self, env: &E) -> Result<(), AppError>;
 
-    /// 6. 实例启动前接口 (内核调用)
-    /// 在所有应用完成 mount（依赖注入就绪）后，内核统一调用
-    async fn pre_start(&self) -> Result<(), AppError> { Ok(()) }
+    /// 6. 实例启动前接口
+    async fn pre_start(&self, env: &E) -> Result<(), AppError> { Ok(()) }
 
-    /// 7. 实例启动后接口 (内核调用)
-    /// 可以在此启动常驻后台任务或开启网络监听
-    async fn post_start(&self) -> Result<(), AppError> { Ok(()) }
+    /// 7. 实例启动后接口
+    async fn post_start(&self, env: &E) -> Result<(), AppError> { Ok(()) }
 
-    /// 8. 配置重载前校验接口 (内核调用)
-    /// 允许应用校验新配置，若返回错误，则内核中止此次配置热更新
-    async fn pre_reload(&self, _new_config: &Self::Config) -> Result<(), AppError> { Ok(()) }
-
-    /// 9. 配置重载后接口 (内核调用)
-    /// 当内核检测到配置发生变动且属于本应用时调用
-    async fn post_reload(&self, new_config: &Self::Config) -> Result<(), AppError>;
-
-    /// 10. 健康探测接口 (内核调用)
-    /// 内核定期轮询应用的存活状态。默认实现返回健康。
-    async fn health_check(&self) -> Result<HealthStatus, AppError> { Ok(HealthStatus::Healthy) }
-
-    /// 11. 严重异常报告接口 (应用主动调用/内核捕获回调)
-    /// 应用内部如果发生不可恢复异常，通过此接口报告
-    async fn on_fatal_error(&self, _err: &AppError) {}
-
-    /// 12. 挂起接口 (内核调用，用于高级流控与维护)
-    async fn suspend(&self) -> Result<(), AppError> { Ok(()) }
-
-    /// 13. 恢复接口 (内核调用，用于高级流控与维护)
-    async fn resume(&self) -> Result<(), AppError> { Ok(()) }
-
-    /// 14. 实例停止前接口 (内核调用)
-    async fn pre_stop(&self) -> Result<(), AppError>;
-
-    /// 15. 实例停止后接口 (内核调用)
-    async fn post_stop(&self) -> Result<(), AppError>;
+    // ... 其他生命周期钩子（reload, stop 等，类似地传递 env）
 }
 ```
 
-### 2.2 组装代理工作流 (Host Proxy Workflow)
+### 2.3 组装代理工作流 (Host Proxy Workflow)
 
-系统本体在启动与运行期间，会严格按照以下顺序自动代理调用各个应用实现的钩子：
-
-1.  **合并配置**：通过调用 `default_config` 和合并用户配置来获取最终参数。
-2.  **创建实例**：先调用 `pre_create` 进行准备，然后实例化应用底层资源，接着调用 `post_create`。
-3.  **挂载实例**：调用 `pre_mount` 进行如数据库自动迁移等工作，随后将其注册到全局依赖注入容器，最后调用 `post_mount`。
-4.  **统一启动 (Start Phase)**：当所有应用挂载完毕，依赖图完全构建后，内核调度所有应用的 `pre_start`，紧接着调度 `post_start` 从而安全拉起所有业务循环。
-5.  **运行期维护**：
-    *   **监控**：内核后台循环调度 `health_check` 获取各个组件状态。
-    *   **配置热更新**：当配置发生变更，先调用 `pre_reload` 验证，验证通过后调用 `post_reload` 执行。
-6.  **资源清理**：系统退出时，内核调度执行 `pre_stop` 实现优雅停机，然后执行 `post_stop` 完成日志上报等最后清理工作。
+1.  **实例化环境**：内核首先在 `main` 阶段构建出具体的结构体类型（例如 `ProdEnv`），它实现了 `SystemEnv` 并持有了底层的真实连接池。
+2.  **生命周期调度**：内核按照顺序调用所有挂载在 `ProdEnv` 上的插件（例如 `UserPlugin<ProdEnv>`）的生命周期钩子，将环境实例的引用传递进去。
+3.  **内联优化**：由于所有调用路径都是具体类型之间的直接调用，Rust 编译器会在编译期进行单态化（Monomorphization）并大量运用内联优化，彻底消除虚函数表开销。
 
 ## 3. 插件系统设计 (Plugin System)
 
 系统中的业务交互以插件的形式组织：
 
-*   **生命周期管理**：`Load` (加载/依赖声明), `Start` (启动监听), `Destroy` (资源销毁)。
-*   **依赖自动映射 (Auto-Mapping / Dependency Injection)**：
-    *   **严禁手动拉取**：严禁插件在运行期主动去 `kernel` 容器中通过 `get_service()` 等方法寻找依赖，这会造成硬编码耦合。
-    *   **声明式注入**：所有依赖的外部接口，必须在插件结构体定义时通过宏 (如 `#[inject]`) 或生命周期 Context 静态声明。Host Proxy 会在实例化插件前自动完成依赖的寻找与注入映射。
+*   **泛型绑定 (Generic Binding)**：
+    *   插件不持有 `Arc<dyn Trait>`，而是在结构体定义时声明其所在的环境。
+    ```rust
+    pub struct UserPlugin<E: SystemEnv> {
+        env: E, // 持有对环境的引用或拥有权
+    }
+    ```
+*   **依赖获取**：插件内部需要使用数据库时，直接调用 `self.env.db().query()`。这会被编译器优化为对具体底层结构体的直接调用。
 *   **通信与共享协议**：
-    *   **接口/Trait**：插件间通过明确定义的 Rust Trait（动态分发 `Arc<dyn Trait>` 优先）进行交互。
-    *   **事件总线 (Event Bus)**：用于解耦不同插件间的异步消息传递。
+    *   **静态分发优先**：插件间交互也倾向于泛型传递，避免动态擦除。
+    *   **Actor 消息总线隔离**：如果某个插件的故障容忍度极低，或是极高风险的外部网络操作，则通过基于所有权转移的通道（MPSC Channel）与其他组件隔离通信。
 
 ## 4. 实践示例
 
