@@ -1,7 +1,7 @@
 //! # microkernel-logger
 //!
-//! Structured async logging Generic App.
-//! Wraps `tracing` + `tracing-subscriber` + `tracing-appender`.
+//! 结构化异步日志记录通用应用。
+//! 封装 `tracing` + `tracing-subscriber` + `tracing-appender`。
 
 pub mod config;
 pub mod lifecycle;
@@ -14,21 +14,21 @@ use microkernel_contracts::{AppError, Archetype, HealthStatus, SystemEnv};
 
 pub use port::LoggerHandle;
 
-/// The logging Generic App.
+/// 日志记录通用应用。
 ///
-/// Must be the **first** component registered in `Bootstrap` so that all
-/// subsequent lifecycle hooks emit structured logs.
+/// 必须是在 `Bootstrap` 中注册的**第一个**组件，以便所有
+/// 后续生命周期钩子发出结构化日志。
 pub struct LoggerApp {
     config: LoggerConfig,
-    /// Guard that keeps the non-blocking rolling-file writer alive.
-    /// Dropped in `post_stop` to flush and close the file.
+    /// 保持非阻塞滚动文件写入器存活的守卫。
+    /// 在 `post_stop` 中被丢弃以刷新并关闭文件。
     _guard: Option<tracing_appender::non_blocking::WorkerGuard>,
     handle: Option<Arc<LoggerHandle>>,
 }
 
 impl LoggerApp {
-    /// Construct an unconfigured logger app. Call `Bootstrap::register_archetype`
-    /// with the result and supply a `LoggerConfig`.
+    /// 构造一个未配置的日志应用。用结果调用 `Bootstrap::register_archetype`
+    /// 并提供一个 `LoggerConfig`。
     pub fn new(config: LoggerConfig) -> Self {
         Self {
             config,
@@ -37,7 +37,7 @@ impl LoggerApp {
         }
     }
 
-    /// Return a shared handle to the logger (available after `post_create`).
+    /// 返回一个日志记录器的共享句柄（在 `post_create` 后可用）。
     pub fn handle(&self) -> Option<Arc<LoggerHandle>> {
         self.handle.clone()
     }

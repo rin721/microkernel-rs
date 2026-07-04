@@ -3,7 +3,7 @@ use tracing::info;
 
 use crate::LoggerApp;
 
-/// Initialize the global tracing subscriber after the instance is constructed.
+/// 在实例构建后初始化全局 tracing 订阅者。
 pub fn run(app: &LoggerApp) -> Result<(), AppError> {
     use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
     use crate::config::{LogFormat, Rotation};
@@ -12,7 +12,7 @@ pub fn run(app: &LoggerApp) -> Result<(), AppError> {
         .map_err(|e| AppError::Initialization(format!("invalid log filter: {}", e)))?;
 
     match (&app.config.log_dir, &app.config.format) {
-        // File output — rolling appender
+        // 文件输出 — 滚动追加器
         (Some(dir), _) => {
             let rotation = match app.config.rotation {
                 Rotation::Minutely => tracing_appender::rolling::minutely(dir, &app.config.file_prefix),
@@ -22,9 +22,9 @@ pub fn run(app: &LoggerApp) -> Result<(), AppError> {
             };
             let (non_blocking, _guard) = tracing_appender::non_blocking(rotation);
 
-            // Note: guard must be kept alive — it is stored in LoggerApp._guard
-            // This is done by the caller (Bootstrap) after post_create returns.
-            // For the subscriber we set it globally here.
+            // 注意：必须保持 guard 存活 — 它存储在 LoggerApp._guard 中
+            // 这是由调用者 (Bootstrap) 在 post_create 返回后完成的。
+            // 对于订阅者，我们在这里全局设置。
             if app.config.format == LogFormat::Json {
                 tracing_subscriber::registry()
                     .with(env_filter)
@@ -39,7 +39,7 @@ pub fn run(app: &LoggerApp) -> Result<(), AppError> {
                     .map_err(|e| AppError::Initialization(format!("subscriber init failed: {}", e)))?;
             }
         }
-        // Stdout only
+        // 仅标准输出
         (None, LogFormat::Json) => {
             tracing_subscriber::registry()
                 .with(env_filter)

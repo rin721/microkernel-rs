@@ -3,7 +3,7 @@ use tracing::info;
 
 use crate::LoggerApp;
 
-/// Verify write permissions to the log directory before mounting.
+/// 挂载前验证对日志目录的写入权限。
 pub fn run(app: &LoggerApp) -> Result<(), AppError> {
     if let Some(ref dir) = app.config.log_dir {
         let test_path = std::path::Path::new(dir).join(".write_test");

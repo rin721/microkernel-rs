@@ -1,6 +1,6 @@
 //! # microkernel-rbac
 //!
-//! RBAC/ABAC access control Business Plugin.
+//! RBAC/ABAC 访问控制业务插件。
 
 pub mod config;
 pub mod port;

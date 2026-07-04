@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-/// Supported log output formats.
+/// 支持的日志输出格式。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum LogFormat {
-    /// Human-readable text with ANSI color codes (dev mode).
+    /// 带有 ANSI 颜色代码的人类可读文本（开发模式）。
     Text,
-    /// Machine-readable JSON (production mode).
+    /// 机器可读的 JSON（生产模式）。
     Json,
 }
 
@@ -16,17 +16,17 @@ impl Default for LogFormat {
     }
 }
 
-/// File rotation strategy.
+/// 文件轮转策略。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Rotation {
-    /// Rotate every minute (useful for tests).
+    /// 每分钟轮转（适用于测试）。
     Minutely,
-    /// Rotate at midnight (default).
+    /// 午夜轮转（默认）。
     Daily,
-    /// Rotate once per hour.
+    /// 每小时轮转一次。
     Hourly,
-    /// Never rotate.
+    /// 从不轮转。
     Never,
 }
 
@@ -36,19 +36,19 @@ impl Default for Rotation {
     }
 }
 
-/// Configuration for the logging Generic App.
+/// 日志记录通用应用配置。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoggerConfig {
-    /// Minimum log level filter (e.g., `"info"`, `"debug"`, `"warn"`).
+    /// 最小日志级别过滤器（例如 `"info"`，`"debug"`，`"warn"`）。
     pub level: String,
-    /// Output format.
+    /// 输出格式。
     pub format: LogFormat,
-    /// Directory to write rolling log files into.
-    /// If `None`, logs are written only to stdout.
+    /// 写入滚动日志文件的目录。
+    /// 如果为 `None`，日志仅写入标准输出。
     pub log_dir: Option<String>,
-    /// Filename prefix for rolling log files.
+    /// 滚动日志文件的文件名前缀。
     pub file_prefix: String,
-    /// File rotation strategy.
+    /// 文件轮转策略。
     pub rotation: Rotation,
 }
 

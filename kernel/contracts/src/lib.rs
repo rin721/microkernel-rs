@@ -1,24 +1,24 @@
 #![allow(async_fn_in_trait)]
 //! # microkernel-contracts
 //!
-//! Zero-dependency trait abstractions for the microkernel system.
+//! 微内核系统的零依赖 trait 抽象。
 //!
-//! This crate is the **Single Source of Truth** for all cross-crate contracts.
-//! It must remain free of any business logic or infrastructure-specific types.
+//! 这个 crate 是所有跨 crate 契约的**唯一真实来源**。
+//! 它必须不包含任何业务逻辑或特定于基础设施的类型。
 //!
-//! ## Module layout
+//! ## 模块布局
 //!
-//! - [`errors`]   — `AppError` and `KernelError` definitions
-//! - [`ports`]    — Port Trait definitions for each infrastructure capability
-//! - [`env`]      — `SystemEnv` — the global static environment constraint
-//! - [`lifecycle`] — `Archetype` and `Plugin` lifecycle hook traits
+//! - [`errors`]   — `AppError` 和 `KernelError` 定义
+//! - [`ports`]    — 每个基础架构功能的端口 Trait 定义
+//! - [`env`]      — `SystemEnv` — 全局静态环境约束
+//! - [`lifecycle`] — `Archetype` 和 `Plugin` 生命周期钩子 trait
 
 pub mod errors;
 pub mod env;
 pub mod lifecycle;
 pub mod ports;
 
-// ── Top-level re-exports for convenience ─────────────────────────────────────
+// ── 顶层重新导出以方便使用 ─────────────────────────────────────
 pub use errors::{AppError, KernelError};
 pub use env::SystemEnv;
 pub use lifecycle::{Archetype, HealthStatus, Plugin};

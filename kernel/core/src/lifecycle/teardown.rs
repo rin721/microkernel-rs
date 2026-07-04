@@ -7,23 +7,23 @@ use tracing::{error, info};
 type StopFuture = Pin<Box<dyn Future<Output = Result<(), KernelError>> + Send>>;
 type StopFn = Box<dyn Fn() -> StopFuture + Send + Sync>;
 
-/// Orchestrates graceful teardown of all registered components in **reverse**
-/// registration order (LIFO — last started, first stopped).
+/// 以**相反**的注册顺序协调所有已注册组件的优雅拆卸
+///（LIFO — 最后启动，最先停止）。
 ///
 /// # Error handling
-/// Unlike `Bootstrap` (which aborts on first error), `Teardown` is
-/// **non-aborting**: it collects all teardown errors and continues stopping
-/// remaining components. All errors are returned at the end.
+/// 与 `Bootstrap`（在第一个错误时中止）不同，`Teardown` 是
+/// **非中止的**：它收集所有拆卸错误并继续停止
+/// 剩余组件。所有错误将在最后返回。
 pub struct Teardown {
     pub(crate) stop_fns: Vec<(&'static str, StopFn)>,
 }
 
 impl Teardown {
-    /// Execute all registered stop functions in reverse order.
+    /// 以相反顺序执行所有注册的停止函数。
     ///
     /// # Returns
-    /// A `Vec` of all errors encountered during teardown. An empty vec means
-    /// clean shutdown.
+    /// 包含拆卸期间遇到的所有错误的 `Vec`。空的 vec 表示
+    /// 干净的关闭。
     pub async fn run(self) -> Vec<KernelError> {
         let mut errors = Vec::new();
 

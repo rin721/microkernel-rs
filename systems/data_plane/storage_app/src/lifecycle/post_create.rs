@@ -9,7 +9,7 @@ pub async fn run(app: &StorageApp) -> Result<(), AppError> {
     let op = match app.config.backend {
         StorageBackend::Local => local_impl::build_operator(&app.config)?,
         StorageBackend::S3 => s3_impl::build_operator(&app.config)?,
-        StorageBackend::Oss => s3_impl::build_operator(&app.config)?, // Simulate OSS with S3 builder for now
+        StorageBackend::Oss => s3_impl::build_operator(&app.config)?, // 暂时使用 S3 构建器模拟 OSS
     };
 
     info!(backend = ?app.config.backend, "storage operator initialized");

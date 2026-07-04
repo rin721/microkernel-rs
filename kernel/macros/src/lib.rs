@@ -1,12 +1,12 @@
 /// # microkernel-macros
 ///
-/// Procedural macros for the microkernel plugin system.
+/// 微内核插件系统的过程宏。
 ///
 /// ## `#[derive(Plugin)]`
 ///
-/// Automatically implements the boilerplate for a `Plugin<E>` implementation:
-/// - Validates that the struct has an `env: E` field.
-/// - Generates a default `name()` implementation returning the struct's type name.
+/// 自动为 `Plugin<E>` 实现样板代码：
+/// - 验证结构体是否有 `env: E` 字段。
+/// - 生成默认的 `name()` 实现，返回结构体的类型名。
 ///
 /// ### Usage
 /// ```rust,ignore
@@ -28,14 +28,14 @@ pub fn derive_plugin(input: TokenStream) -> TokenStream {
     let name = &input.ident;
     let name_str = name.to_string();
 
-    // Extract generic parameters to reconstruct impl<E: SystemEnv>
+    // 提取泛型参数以重构 impl<E: SystemEnv>
     let generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    // Generate a `name()` method implementation
+    // 生成 `name()` 方法实现
     let expanded = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
-            /// Returns the plugin's type name for use in log messages and diagnostics.
+            /// 返回插件的类型名，用于日志消息和诊断。
             pub fn plugin_name() -> &'static str {
                 #name_str
             }

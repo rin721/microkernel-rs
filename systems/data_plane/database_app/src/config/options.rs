@@ -1,15 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-/// Configuration for the relational database Generic App.
+/// 关系数据库泛型应用配置。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DbConfig {
-    /// The database connection URL (e.g., `postgres://user:pass@localhost/db`).
+    /// 数据库连接 URL（例如 `postgres://user:pass@localhost/db`）。
     pub url: String,
-    /// Maximum number of concurrent connections in the pool.
+    /// 连接池中的最大并发连接数。
     pub max_connections: u32,
-    /// Minimum number of idle connections to maintain.
+    /// 要维持的最小空闲连接数。
     pub min_connections: u32,
-    /// Connection timeout in seconds.
+    /// 连接超时（秒）。
     pub connect_timeout: u64,
 }
 

@@ -1,6 +1,6 @@
 //! # microkernel-auth
 //!
-//! JWT authentication Business Plugin.
+//! JWT 认证业务插件。
 
 pub mod config;
 pub mod port;
@@ -32,7 +32,7 @@ impl AuthPlugin {
 
 impl<E: SystemEnv> Plugin<E> for AuthPlugin {
     async fn on_load(&mut self, _env: &E) -> Result<(), AppError> {
-        // Validate config
+        // 验证配置
         if self.config.secret.is_empty() {
             return Err(AppError::Config("JWT secret cannot be empty".to_owned()));
         }

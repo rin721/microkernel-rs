@@ -1,8 +1,8 @@
 //! # microkernel-database
 //!
-//! Relational database Generic App.
-//! Wraps `sea-orm` (which wraps `sqlx`) to provide connection pool management
-//! and schema migrations.
+//! 关系型数据库泛型应用。
+//! 包装 `sea-orm`（其包装了 `sqlx`），以提供连接池管理
+//! 和 schema 迁移。
 
 pub mod config;
 pub mod error;
@@ -16,17 +16,17 @@ use microkernel_contracts::{AppError, Archetype, DatabasePort, HealthStatus, Sys
 
 pub use port::DbHandle;
 
-/// The database Generic App.
+/// 数据库泛型应用。
 pub struct DatabaseApp {
     config: DbConfig,
-    /// The actual database connection pool, established during `pre_create`.
+    /// 实际的数据库连接池，在 `pre_create` 期间建立。
     pool: Option<sea_orm::DatabaseConnection>,
-    /// The shared handle exposed as the port.
+    /// 暴露为端口的共享句柄。
     handle: Option<Arc<DbHandle>>,
 }
 
 impl DatabaseApp {
-    /// Construct an unconfigured database app.
+    /// 构造未配置的数据库应用。
     pub fn new(config: DbConfig) -> Self {
         Self {
             config,
@@ -35,7 +35,7 @@ impl DatabaseApp {
         }
     }
 
-    /// Return a shared handle to the database (available after `post_create`).
+    /// 返回数据库的共享句柄（在 `post_create` 后可用）。
     pub fn handle(&self) -> Option<Arc<DbHandle>> {
         self.handle.clone()
     }

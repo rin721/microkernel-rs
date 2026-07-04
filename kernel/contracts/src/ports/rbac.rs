@@ -1,20 +1,20 @@
 use crate::errors::AppError;
 
-/// Port Trait for role-based and attribute-based access control.
+/// 针对基于角色和基于属性的访问控制的端口 Trait。
 ///
-/// The concrete implementation uses `casbin` internally. Business plugins
-/// call `env.rbac().enforce(...)` without any direct dependency on the
-/// Casbin crate.
+/// 具体实现内部使用 `casbin`。业务插件
+/// 调用 `env.rbac().enforce(...)`，而没有对
+/// Casbin crate 的任何直接依赖。
 pub trait RbacPort: Send + Sync + 'static {
-    /// Evaluate whether `subject` may perform `action` on `object`.
+    /// 评估 `subject` 是否可以对 `object` 执行 `action`。
     ///
-    /// # Arguments
-    /// * `subject` — the acting principal (e.g., user ID or role name)
-    /// * `object`  — the resource being accessed (e.g., `/api/orders`)
-    /// * `action`  — the operation being attempted (e.g., `"read"`, `"write"`)
+    /// # 参数
+    /// * `subject` — 执行操作的主体 (例如，用户 ID 或角色名)
+    /// * `object`  — 被访问的资源 (例如，`/api/orders`)
+    /// * `action`  — 试图执行的操作 (例如，`"read"`, `"write"`)
     ///
-    /// Returns `Ok(true)` when access is granted, `Ok(false)` when denied.
-    /// Returns `Err` only if the policy engine itself encounters an internal error.
+    /// 授权访问时返回 `Ok(true)`，拒绝时返回 `Ok(false)`。
+    /// 仅在策略引擎本身遇到内部错误时返回 `Err`。
     fn enforce(
         &self,
         subject: &str,
@@ -22,12 +22,12 @@ pub trait RbacPort: Send + Sync + 'static {
         action: &str,
     ) -> impl std::future::Future<Output = Result<bool, AppError>> + Send;
 
-    /// Reload policy rules from the backing store without restarting the component.
+    /// 在不重新启动组件的情况下，从后备存储重新加载策略规则。
     ///
-    /// Called when the `RoleUpdated` event is received from the event bus.
+    /// 在从事件总线收到 `RoleUpdated` 事件时调用。
     fn reload_policy(&self) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Add a policy rule at runtime.
+    /// 在运行时添加策略规则。
     fn add_policy(
         &self,
         subject: &str,
@@ -35,7 +35,7 @@ pub trait RbacPort: Send + Sync + 'static {
         action: &str,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Remove a policy rule at runtime.
+    /// 在运行时移除策略规则。
     fn remove_policy(
         &self,
         subject: &str,

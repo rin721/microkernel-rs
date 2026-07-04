@@ -1,7 +1,7 @@
 //! # microkernel-storage
 //!
-//! Unified object storage Generic App.
-//! Wraps `opendal` (S3, local FS, OSS, etc.)
+//! 统一对象存储泛型应用。
+//! 包装 `opendal`（S3、本地文件系统、OSS 等）
 
 pub mod config;
 pub mod error;

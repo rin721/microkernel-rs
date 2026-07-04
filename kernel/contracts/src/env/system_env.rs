@@ -1,17 +1,16 @@
 use crate::ports::{AuthPort, CachePort, DatabasePort, LoggerPort, RbacPort, StoragePort};
 
-/// The global static environment constraint.
+/// 全局静态环境约束。
 ///
-/// `SystemEnv` acts as a compile-time verified service locator. Every associated
-/// type must be resolved at build time — there are **no** `Arc<dyn Trait>` vtables
-/// on any hot path.
+/// `SystemEnv` 作为一个编译时验证的服务定位器。每个关联
+/// 类型必须在构建时解析 —— 在任何热路径上都**没有** `Arc<dyn Trait>` 虚表。
 ///
-/// # How it works
-/// 1. The `host` crate defines a concrete `ProdEnv` struct that implements this trait.
-/// 2. Every Generic App and Business Plugin is parameterized as `SomeApp<E: SystemEnv>`.
-/// 3. Rust's monomorphization produces a single, fully inlined call graph per concrete `E`.
+/// # 工作原理
+/// 1. `host` crate 定义了一个实现此 trait 的具体 `ProdEnv` 结构体。
+/// 2. 每个通用应用和业务插件都被参数化为 `SomeApp<E: SystemEnv>`。
+/// 3. Rust 的单态化为每个具体的 `E` 生成单个完全内联的调用图。
 ///
-/// # Implementing `SystemEnv`
+/// # 实现 `SystemEnv`
 /// ```rust,ignore
 /// use microkernel_contracts::SystemEnv;
 ///
@@ -32,33 +31,33 @@ use crate::ports::{AuthPort, CachePort, DatabasePort, LoggerPort, RbacPort, Stor
 /// }
 /// ```
 pub trait SystemEnv: Clone + Send + Sync + 'static {
-    // ── Associated types (statically resolved at compile time) ────────────────
+    // ── 关联类型 (在编译时静态解析) ────────────────
 
-    /// The concrete relational database accessor.
+    /// 具体的反向关系数据库访问器。
     type Db: DatabasePort;
-    /// The concrete two-level cache accessor.
+    /// 具体的两级缓存访问器。
     type Cache: CachePort;
-    /// The concrete object storage accessor.
+    /// 具体的对象存储访问器。
     type Storage: StoragePort;
-    /// The concrete JWT authentication accessor.
+    /// 具体的 JWT 身份验证访问器。
     type Auth: AuthPort;
-    /// The concrete RBAC/ABAC policy engine.
+    /// 具体的 RBAC/ABAC 策略引擎。
     type Rbac: RbacPort;
-    /// The concrete logging subsystem handle.
+    /// 具体的日志子系统句柄。
     type Logger: LoggerPort;
 
-    // ── Accessors (zero-cost — inlined to direct field reads) ─────────────────
+    // ── 访问器 (零成本 — 内联为直接字段读取) ─────────────────
 
-    /// Access the database port.
+    /// 访问数据库端口。
     fn db(&self) -> &Self::Db;
-    /// Access the cache port.
+    /// 访问缓存端口。
     fn cache(&self) -> &Self::Cache;
-    /// Access the storage port.
+    /// 访问存储端口。
     fn storage(&self) -> &Self::Storage;
-    /// Access the auth port.
+    /// 访问身份验证端口。
     fn auth(&self) -> &Self::Auth;
-    /// Access the RBAC port.
+    /// 访问 RBAC 端口。
     fn rbac(&self) -> &Self::Rbac;
-    /// Access the logger port.
+    /// 访问日志端口。
     fn logger(&self) -> &Self::Logger;
 }

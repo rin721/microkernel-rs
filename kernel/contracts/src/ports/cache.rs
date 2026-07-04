@@ -2,24 +2,24 @@ use std::time::Duration;
 
 use crate::errors::AppError;
 
-/// Port Trait for two-level (local + distributed) cache access.
+/// 针对两级（本地 + 分布式）缓存访问的端口 Trait。
 ///
-/// Implementations route reads through local memory first (L1 cache via `moka`),
-/// then fall back to the distributed store (L2 cache via `redis`). Writes are
-/// applied to both levels with the specified TTL.
+/// 实现首先通过本地内存（L1 缓存，通过 `moka`）路由读取，
+/// 然后回退到分布式存储（L2 缓存，通过 `redis`）。写入
+/// 连同指定的 TTL 会应用于两个级别。
 pub trait CachePort: Send + Sync + 'static {
-    /// Retrieve a value by key.
+    /// 通过键检索值。
     ///
-    /// Returns `None` if the key does not exist or has expired.
+    /// 如果键不存在或已过期，则返回 `None`。
     fn get(
         &self,
         key: &str,
     ) -> impl std::future::Future<Output = Result<Option<Vec<u8>>, AppError>> + Send;
 
-    /// Store a value with an optional time-to-live.
+    /// 存储具有可选生存时间（TTL）的值。
     ///
-    /// If `ttl` is `None` the entry persists until explicitly deleted.
-    /// If `ttl` is `Some(Duration)` the entry expires after that duration.
+    /// 如果 `ttl` 是 `None`，条目将持久保存，直到明确删除。
+    /// 如果 `ttl` 是 `Some(Duration)`，条目在指定的时间段之后过期。
     fn set(
         &self,
         key: &str,
@@ -27,20 +27,20 @@ pub trait CachePort: Send + Sync + 'static {
         ttl: Option<Duration>,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Delete a value by key. Succeeds even if the key does not exist.
+    /// 通过键删除值。即使键不存在也会成功。
     fn del(
         &self,
         key: &str,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Return the remaining time-to-live for a key.
+    /// 返回键的剩余生存时间。
     ///
-    /// Returns `None` if the key does not exist or has no expiry.
+    /// 如果键不存在或没有过期时间，则返回 `None`。
     fn ttl(
         &self,
         key: &str,
     ) -> impl std::future::Future<Output = Result<Option<Duration>, AppError>> + Send;
 
-    /// Verify that the cache backend is reachable (e.g., PING Redis).
+    /// 验证缓存后端是否可访问（例如，PING Redis）。
     fn ping(&self) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 }

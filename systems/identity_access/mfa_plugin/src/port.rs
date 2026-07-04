@@ -31,7 +31,7 @@ impl MfaHandle {
             30,
             secret.to_bytes().unwrap(),
             Some(self.issuer.clone()),
-            "".to_owned(), // account name not needed for verification
+            "".to_owned(), // 验证不需要账户名
         ).map_err(|e| AppError::PermissionDenied(e.to_string()))?;
 
         Ok(totp.check_current(token).unwrap_or(false))

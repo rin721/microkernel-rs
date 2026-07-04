@@ -7,9 +7,9 @@ use tracing::info;
 use crate::DatabaseApp;
 
 pub async fn run(app: &DatabaseApp) -> Result<(), AppError> {
-    // In a real implementation, we would establish the connection pool here
-    // and assign it to app.pool using interior mutability or unsafe cell.
-    // For this demonstration, we'll just log.
+    // 在实际实现中，我们将在此处建立连接池
+    // 并使用内部可变性或 unsafe cell 将其分配给 app.pool。
+    // 对于本演示，我们只记录日志。
     let mut opt = ConnectOptions::new(app.config.url.clone());
     opt.max_connections(app.config.max_connections)
         .min_connections(app.config.min_connections)

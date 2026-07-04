@@ -2,49 +2,49 @@ use thiserror::Error;
 
 use crate::errors::AppError;
 
-/// Kernel-level error type for bootstrap and teardown failures.
+/// 引导和销毁失败的内核级错误类型。
 ///
-/// Unlike `AppError` (which surfaces from application code), `KernelError` is raised
-/// by the microkernel engine itself when lifecycle orchestration fails critically.
+/// 与 `AppError`（从应用程序代码中产生）不同，当生命周期编排发生严重失败时，
+/// 微内核引擎本身会引发 `KernelError`。
 ///
-/// # Stability
-/// `#[non_exhaustive]` — see `AppError` docs for rationale.
+/// # 稳定性
+/// `#[non_exhaustive]` — 参见 `AppError` 文档中的基本原理。
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum KernelError {
-    /// A component failed during the bootstrap (Load → Mount → Start) phase.
+    /// 组件在引导（Load → Mount → Start）阶段失败。
     #[error("bootstrap failed for component '{component}': {source}")]
     BootstrapFailed {
-        /// Human-readable name of the failing component (e.g., `"DatabaseApp"`).
+        /// 失败组件的人类可读名称（例如，`"DatabaseApp"`）。
         component: String,
-        /// The underlying application error that caused the failure.
+        /// 导致失败的底层应用程序错误。
         source: AppError,
     },
 
-    /// A component failed during the teardown (PreStop → PostStop) phase.
+    /// 组件在销毁（PreStop → PostStop）阶段失败。
     ///
-    /// Teardown errors are **non-fatal** — the kernel logs them and continues
-    /// stopping remaining components. All teardown errors are collected and
-    /// reported together at the end.
+    /// 销毁错误是**非致命的** —— 内核记录它们并继续
+    /// 停止剩余的组件。所有的销毁错误都会在最后
+    /// 收集并一起报告。
     #[error("teardown failed for component '{component}': {source}")]
     TeardownFailed {
         component: String,
         source: AppError,
     },
 
-    /// The environment could not be assembled (e.g., a required port is missing).
+    /// 环境无法构建（例如，缺少必需的端口）。
     #[error("environment build failed: {0}")]
     EnvBuildFailed(String),
 
-    /// The event bus channel is at capacity; the publisher must back off.
+    /// 事件总线通道已达到容量上限；发布者必须退避。
     ///
-    /// This error is returned from `EventDispatcher::publish` when the bounded
-    /// channel buffer is full, surfacing backpressure to the caller explicitly.
-    /// **Never silently discarded.**
+    /// 当有界通道缓冲区已满时，`EventDispatcher::publish` 会返回此错误，
+    /// 以向调用方明确显示背压。
+    /// **绝不能被静默丢弃。**
     #[error("event bus backpressure exceeded: channel capacity reached")]
     BackpressureExceeded,
 
-    /// A task cancellation signal could not be delivered.
+    /// 无法传递任务取消信号。
     #[error("cancellation signal failed: {0}")]
     CancellationFailed(String),
 }

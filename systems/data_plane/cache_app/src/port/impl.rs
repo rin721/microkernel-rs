@@ -2,7 +2,7 @@ use std::time::Duration;
 use microkernel_contracts::{AppError, CachePort};
 
 pub struct CacheHandle {
-    // In a real implementation:
+    // 在实际实现中：
     // pub(crate) redis_pool: ...
     // pub(crate) local_cache: moka::future::Cache<String, Vec<u8>>,
 }

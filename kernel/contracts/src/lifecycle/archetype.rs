@@ -1,31 +1,31 @@
 use crate::env::SystemEnv;
 use crate::errors::AppError;
 
-/// Health status reported by a Generic App's `health_check` hook.
+/// 通用应用程序 `health_check` 钩子报告的健康状态。
 ///
-/// The kernel polls this periodically and exposes the aggregated result through
-/// the metrics/observability layer.
+/// 内核定期轮询此项并通过指标/可观测性层
+/// 公开聚合结果。
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum HealthStatus {
-    /// The component is operating normally.
+    /// 组件运行正常。
     Healthy,
-    /// The component is operational but with reduced capability.
+    /// 组件可运行，但功能降低。
     Degraded {
-        /// Human-readable explanation of the degradation.
+        /// 降低功能的人类可读说明。
         reason: String,
     },
-    /// The component is not operational. The kernel may attempt a restart.
+    /// 组件无法运行。内核可能会尝试重启。
     Unhealthy,
 }
 
-/// Generic App lifecycle contract — the kernel's "霸王条款" for all Generic Apps.
+/// 通用应用生命周期契约 — 内核对所有通用应用的"霸王条款"。
 ///
-/// Every Generic App (database, cache, storage, logger, etc.) **must** implement
-/// this trait. The kernel calls hooks in strict sequence and will abort the bootstrap
-/// sequence on any `Err` returned by a **mandatory** hook.
+/// 每一个通用应用（数据库、缓存、存储、日志等）**必须**实现
+/// 此 trait。内核严格按顺序调用钩子，并且在任何**强制性**钩子返回 `Err`
+/// 时中止引导序列。
 ///
-/// # Hook execution order
+/// # 钩子执行顺序
 ///
 /// ```text
 ///   ┌─ Bootstrap ──────────────────────────────────────────────────────────┐
@@ -43,102 +43,93 @@ pub enum HealthStatus {
 ///   └──────────────────────────────────────────────────────────────────────┘
 /// ```
 ///
-/// # Async in trait
-/// Uses Rust 1.75+ native `async fn` in trait (RPITIT). No `async_trait` macro
-/// is needed because all callers use static dispatch via `<A: Archetype<E>>`.
+/// # Trait 中的 Async
+/// 使用 Rust 1.75+ 原生的 trait 内 `async fn` (RPITIT)。不需要 `async_trait` 宏，
+/// 因为所有的调用者都通过 `<A: Archetype<E>>` 使用静态分发。
 pub trait Archetype<E: SystemEnv>: Send + Sync + Sized {
-    /// The configuration type for this app.
+    /// 此应用程序的配置类型。
     ///
-    /// Must implement `Default` so the kernel can call `default_config()` when
-    /// no explicit configuration is supplied.
+    /// 必须实现 `Default`，以便当没有提供显式配置时，内核可以调用 `default_config()`。
     type Config: Send + Sync + Default;
 
-    // ── Configuration ─────────────────────────────────────────────────────────
+    // ── 配置 ─────────────────────────────────────────────────────────
 
-    /// Return the default configuration for this app.
+    /// 返回此应用程序的默认配置。
     ///
-    /// The kernel calls this when no explicit config is provided, enabling
-    /// "zero-config / batteries-included" startup.
+    /// 当没有提供显式配置时，内核将调用此方法，从而实现
+    /// “零配置 / 开箱即用” 启动。
     fn default_config() -> Self::Config {
         Self::Config::default()
     }
 
-    // ── Mandatory hooks (must be implemented; no default body) ─────────────────
+    // ── 强制性钩子 (必须实现；没有默认实现) ─────────────────
 
-    /// Called **before** the app instance is constructed.
+    /// 在构造应用程序实例**之前**调用。
     ///
-    /// Use this hook to validate and normalize the configuration (e.g., check
-    /// that a database URL is well-formed, resolve environment variable
-    /// overrides). The `config` parameter is `&mut` so corrections can be
-    /// applied in-place.
+    /// 使用此钩子来验证和标准化配置（例如，检查
+    /// 数据库 URL 是否格式正确，解析环境变量覆盖）。
+    /// `config` 参数是 `&mut`，因此可以在原地应用更正。
     ///
-    /// # Errors
-    /// Return `AppError::Config` if validation fails. The kernel will abort
-    /// the bootstrap sequence.
+    /// # 错误
+    /// 如果验证失败，返回 `AppError::Config`。内核将中止引导序列。
     fn pre_create(config: &mut Self::Config) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Called immediately after the app instance is constructed, before mounting.
+    /// 在构造应用程序实例后，装载之前立即调用。
     ///
-    /// Use this hook to perform post-construction self-checks (e.g., verify
-    /// that the connection pool was populated correctly).
+    /// 使用此钩子执行构建后的自检（例如，验证连接池是否已正确填充）。
     fn post_create(&self) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Called just before the app is registered into the kernel's environment.
+    /// 在应用程序注册到内核的环境之前调用。
     ///
-    /// Use this hook for actions that require infrastructure to be partially
-    /// available but not yet serving traffic — the canonical use case is running
-    /// database migrations.
+    /// 使用此钩子进行那些基础设施需要部分可用，但尚未开始提供流量操作的操作——典型的用例是运行数据库迁移。
     fn pre_mount(&self, env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Called after the app has been registered and the environment is available.
+    /// 在应用程序已注册并且环境可用后调用。
     ///
-    /// Use this hook to announce readiness or to perform cross-app wiring
-    /// (e.g., subscribe to event bus topics).
+    /// 使用此钩子宣布就绪或执行跨应用程序连接（例如，订阅事件总线主题）。
     fn post_mount(&self, env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    // ── Optional hooks (default: no-op `Ok(())`) ─────────────────────────────
+    // ── 可选钩子 (默认: 无操作 `Ok(())`) ─────────────────────────────
 
-    /// Called before the app begins accepting traffic / serving requests.
+    /// 在应用程序开始接受流量/服务请求之前调用。
     fn pre_start(&self, _env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Called after the app has started and is fully operational.
+    /// 在应用程序启动并完全运行之后调用。
     fn post_start(&self, _env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Called before a hot-reload of the configuration is applied.
+    /// 在应用配置的热重载之前调用。
     ///
-    /// Return `Err` to veto the reload (e.g., the new config is invalid).
+    /// 返回 `Err` 以否决重载（例如，新配置无效）。
     fn pre_reload(&self, _new_config: &Self::Config) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Called after the hot-reload has been successfully applied.
+    /// 在成功应用热重载后调用。
     fn post_reload(&self, _new_config: &Self::Config) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Called when the shutdown signal is received, before resources are released.
+    /// 收到关机信号时，在释放资源之前调用。
     ///
-    /// Use this hook to stop accepting new requests and wait for in-flight
-    /// operations to complete (graceful shutdown).
+    /// 使用此钩子停止接受新请求，并等待进行中的操作完成（优雅关机）。
     fn pre_stop(&self) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Called after all resources have been released.
+    /// 在所有资源被释放之后调用。
     ///
-    /// Use this hook to emit final telemetry or cleanup notifications.
+    /// 使用此钩子发出最终的遥测数据或清理通知。
     fn post_stop(&self) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Report the current health of the component.
+    /// 报告组件的当前健康状态。
     ///
-    /// The kernel polls this on a configurable interval and aggregates results
-    /// for the `/health` endpoint.
+    /// 内核按照可配置的时间间隔轮询此状态，并为 `/health` 端点聚合结果。
     fn health_check(&self) -> impl std::future::Future<Output = Result<HealthStatus, AppError>> + Send {
         async { Ok(HealthStatus::Healthy) }
     }

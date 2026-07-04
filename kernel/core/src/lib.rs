@@ -1,10 +1,10 @@
 //! # microkernel-core
 //!
-//! The microkernel engine. Provides:
+//! 微内核引擎。提供：
 //!
-//! - [`env`]        — `EnvBuilder` for assembling a concrete `SystemEnv`
-//! - [`lifecycle`]  — `Bootstrap` and `Teardown` orchestrators
-//! - [`event_bus`]  — `EventDispatcher` bounded broadcast channel
+//! - [`env`]        — 用于组装具体 `SystemEnv` 的 `EnvBuilder`
+//! - [`lifecycle`]  — `Bootstrap` 和 `Teardown` 编排器
+//! - [`event_bus`]  — `EventDispatcher` 有界广播通道
 
 pub mod env;
 pub mod event_bus;

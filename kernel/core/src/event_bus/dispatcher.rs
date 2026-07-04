@@ -2,29 +2,28 @@ use microkernel_contracts::KernelError;
 use tokio::sync::broadcast;
 use tracing::warn;
 
-/// The event bus capacity.
+/// 事件总线容量。
 ///
-/// A bounded channel is mandatory per the backpressure rule:
-/// producers are forced to handle `BackpressureExceeded` rather than
-/// silently growing unbounded memory.
+/// 根据背压规则，必须使用有界通道：
+/// 生产者被迫处理 `BackpressureExceeded`，
+/// 而不是无声地增加无界内存。
 const EVENT_BUS_CAPACITY: usize = 1024;
 
-/// A bounded, multi-producer multi-consumer event dispatcher built on
-/// `tokio::sync::broadcast`.
+/// 基于 `tokio::sync::broadcast` 构建的，
+/// 有界的、多生产者多消费者事件调度器。
 ///
 /// # Backpressure
-/// When the channel is at capacity, [`publish`] returns
-/// `KernelError::BackpressureExceeded` immediately. The caller is responsible
-/// for implementing a retry or drop strategy — the dispatcher **never** silently
-/// discards events.
+/// 当通道达到容量时，[`publish`] 立即返回
+/// `KernelError::BackpressureExceeded`。调用者有责任
+/// 实现重试或丢弃策略 — 调度器**永远不会**无声地丢弃事件。
 ///
 /// # Cloning
-/// `EventDispatcher` is `Clone`; each clone shares the same underlying sender,
-/// so all clones publish to the same channel.
+/// `EventDispatcher` 实现了 `Clone`；每个克隆共享底层发送者，
+/// 所以所有的克隆都会发布到同一个通道。
 ///
 /// # Type parameter
-/// `Ev` — the event payload type. Must be `Clone + Send + Sync + 'static`
-/// because `broadcast` delivers a clone to every subscriber.
+/// `Ev` — 事件有效载荷类型。必须是 `Clone + Send + Sync + 'static`，
+/// 因为 `broadcast` 会向每个订阅者传递一个克隆。
 #[derive(Clone)]
 pub struct EventDispatcher<Ev>
 where
@@ -37,28 +36,28 @@ impl<Ev> EventDispatcher<Ev>
 where
     Ev: Clone + Send + Sync + 'static,
 {
-    /// Create a new dispatcher with a bounded capacity of [`EVENT_BUS_CAPACITY`].
+    /// 使用指定的 [`EVENT_BUS_CAPACITY`] 边界容量创建一个新的调度器。
     pub fn new() -> Self {
-        // broadcast::channel allocates the ring buffer eagerly.
+        // broadcast::channel 急切地分配环形缓冲区。
         let (sender, _) = broadcast::channel(EVENT_BUS_CAPACITY);
         Self { sender }
     }
 
-    /// Publish an event to all active subscribers.
+    /// 向所有活动的订阅者发布事件。
     ///
     /// # Errors
-    /// - `KernelError::BackpressureExceeded` — channel buffer is full.
-    ///   The caller must back off; this error is **never** silently swallowed.
+    /// - `KernelError::BackpressureExceeded` — 通道缓冲区已满。
+    ///   调用者必须后退；此错误**永远不会**被无声地吞噬。
     ///
-    /// Note: if there are **no** subscribers the send succeeds without error
-    /// (the event is simply discarded — this is normal for optional consumers).
+    /// 注意：如果**没有**订阅者，发送成功且不报错
+    /// （事件被简单地丢弃 — 这对可选消费者来说是正常的）。
     pub fn publish(&self, event: Ev) -> Result<(), KernelError> {
         match self.sender.send(event) {
             Ok(_) => Ok(()),
             Err(broadcast::error::SendError(_)) => {
-                // The only reason `send` fails on a broadcast channel is that
-                // there are no receivers. This is not a backpressure error — log
-                // a debug warning and continue.
+                // `send` 在广播通道上失败的唯一原因是
+                // 没有接收者。这不是背压错误 — 记录
+                // 调试警告并继续。
                 warn!(
                     event_type = std::any::type_name::<Ev>(),
                     "event published with no active subscribers; event dropped"
@@ -68,16 +67,16 @@ where
         }
     }
 
-    /// Subscribe to the event stream.
+    /// 订阅事件流。
     ///
-    /// Each call returns an independent `Receiver`. Lagging receivers that
-    /// fall behind by more than `EVENT_BUS_CAPACITY` messages will receive a
-    /// `RecvError::Lagged` error on their next `recv()` call, not a panic.
+    /// 每次调用返回一个独立的 `Receiver`。落后超过
+    /// `EVENT_BUS_CAPACITY` 消息的接收者，在下次 `recv()` 调用时，
+    /// 将收到 `RecvError::Lagged` 错误，而不是引发 panic。
     pub fn subscribe(&self) -> broadcast::Receiver<Ev> {
         self.sender.subscribe()
     }
 
-    /// Return the number of currently active subscribers.
+    /// 返回当前活动的订阅者数量。
     pub fn subscriber_count(&self) -> usize {
         self.sender.receiver_count()
     }
@@ -109,10 +108,10 @@ mod tests {
 
     #[tokio::test]
     async fn backpressure_not_triggered_without_subscribers() {
-        // Without subscribers, broadcast::send returns Err(SendError) but
-        // we treat that as an empty-subscriber situation, not backpressure.
+        // 没有订阅者时，broadcast::send 返回 Err(SendError)，但
+        // 我们将其视为无订阅者的情况，而不是背压。
         let bus: EventDispatcher<u32> = EventDispatcher::new();
-        // Should NOT return BackpressureExceeded
+        // 不应返回 BackpressureExceeded
         assert!(bus.publish(1).is_ok());
     }
 

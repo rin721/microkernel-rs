@@ -1,6 +1,6 @@
 //! # microkernel-metrics
 //!
-//! Prometheus metrics Business Plugin.
+//! Prometheus 指标业务插件。
 
 pub mod config;
 pub mod port;

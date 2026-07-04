@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheConfig {
-    /// Redis connection URL
+    /// Redis 连接 URL
     pub redis_url: String,
-    /// Local moka cache max capacity (number of entries)
+    /// 本地 moka 缓存最大容量（条目数）
     pub local_capacity: u64,
-    /// Default TTL in seconds for cache entries if not specified per-request
+    /// 如果未按请求指定，缓存条目的默认 TTL（秒）
     pub default_ttl_secs: u64,
 }
 

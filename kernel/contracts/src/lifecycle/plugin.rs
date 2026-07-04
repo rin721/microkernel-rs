@@ -1,67 +1,66 @@
 use crate::env::SystemEnv;
 use crate::errors::AppError;
 
-/// Business Plugin lifecycle contract.
+/// 业务插件生命周期契约。
 ///
-/// Every business plugin (rbac, auth, mfa, metrics, …) **must** implement this
-/// trait. Unlike `Archetype` (which manages infrastructure resources), a `Plugin`
-/// is a stateful service that interacts with the environment during its lifetime.
+/// 每一个业务插件（rbac, auth, mfa, metrics, …）**必须**实现此
+/// trait。与 `Archetype`（管理基础设施资源）不同，`Plugin`
+/// 是一个有状态的服务，在其生命周期内与环境进行交互。
 ///
-/// # Hook execution order
+/// # 钩子执行顺序
 ///
 /// ```text
-///   on_load(env)   — plugin receives the assembled environment, performs init
-///   on_start(env)  — plugin begins active processing (subscribe to event bus, etc.)
+///   on_load(env)   — 插件接收已组装的环境，执行初始化
+///   on_start(env)  — 插件开始主动处理（订阅事件总线等）
 ///        ↕  (runtime)
-///   on_stop(env)   — plugin ceases processing and drains pending work
-///   on_unload(env) — plugin releases all held resources
+///   on_stop(env)   — 插件停止处理并排空待处理的工作
+///   on_unload(env) — 插件释放所有持有的资源
 /// ```
 ///
-/// # Static dispatch
-/// Like `Archetype`, `Plugin` uses native `async fn` (RPITIT). All lifecycle
-/// calls are statically dispatched through the generic bound `<P: Plugin<E>>`.
+/// # 静态分发
+/// 像 `Archetype` 一样，`Plugin` 使用原生的 `async fn` (RPITIT)。所有生命周期
+/// 调用都是通过泛型边界 `<P: Plugin<E>>` 静态分发的。
 pub trait Plugin<E: SystemEnv>: Send + Sync {
-    /// Initialize the plugin with a reference to the fully assembled environment.
+    /// 接收完整组装的环境引用以初始化插件。
     ///
-    /// Called once, during the bootstrap phase, after all Generic Apps have
-    /// completed their `post_mount` hooks. The `env` is fully operational at
-    /// this point — the plugin may perform database queries, cache reads, etc.
+    /// 在引导阶段调用一次，在所有通用应用程序完成
+    /// 其 `post_mount` 钩子之后。此时 `env` 是完全运行的——
+    /// 插件可以执行数据库查询，缓存读取等。
     ///
-    /// # Errors
-    /// Return `AppError` to abort bootstrap. The kernel treats a failing `on_load`
-    /// as a fatal error and begins teardown immediately.
+    /// # 错误
+    /// 返回 `AppError` 以中止引导。内核将失败的 `on_load`
+    /// 视为致命错误，并立即开始销毁。
     fn on_load(&mut self, env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Begin active processing.
+    /// 开始主动处理。
     ///
-    /// Use this hook to subscribe to event bus topics, spawn managed background
-    /// tasks (via the kernel's task registry), or start accepting requests.
+    /// 使用此钩子订阅事件总线主题，生成受管后台
+    /// 任务（通过内核的任务注册表），或开始接受请求。
     ///
-    /// # Important
-    /// **Never** spawn unmanaged `tokio::spawn` tasks here. All background work
-    /// must be registered with the kernel so it can be cleanly cancelled during
-    /// teardown.
+    /// # 重要
+    /// **绝不能**在此处生成不受管的 `tokio::spawn` 任务。所有后台工作
+    /// 必须在内核注册，以便在销毁期间干净地取消。
     fn on_start(&mut self, _env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Cease active processing.
+    /// 停止主动处理。
     ///
-    /// Cancel any event bus subscriptions and signal managed background tasks
-    /// to stop. Wait for in-flight work to drain before returning.
+    /// 取消任何事件总线订阅并向受管后台任务发出信号
+    /// 以停止。在返回之前等待进行中的工作排空。
     fn on_stop(&mut self, _env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Release all resources held by the plugin.
+    /// 释放插件持有的所有资源。
     ///
-    /// Called after `on_stop` has returned. At this point the environment may
-    /// have begun teardown — do not attempt to access infrastructure resources
-    /// (e.g., issue database queries) in this hook.
+    /// 在 `on_stop` 返回后调用。此时环境可能
+    /// 已开始销毁——在此钩子中不要尝试访问基础设施资源
+    /// （例如，发出数据库查询）。
     fn on_unload(&mut self, _env: &E) -> impl std::future::Future<Output = Result<(), AppError>> + Send {
         async { Ok(()) }
     }
 
-    /// Human-readable name used in log messages and error reports.
+    /// 用于日志消息和错误报告的人类可读名称。
     fn name(&self) -> &'static str;
 }

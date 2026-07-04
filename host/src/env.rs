@@ -8,7 +8,7 @@ use microkernel_storage::StorageHandle;
 use microkernel_auth::AuthHandle;
 use microkernel_rbac::RbacHandle;
 
-/// The concrete `SystemEnv` for the host application.
+/// 主机应用的具体 `SystemEnv` 实现。
 #[derive(Clone)]
 pub struct ProdEnv {
     logger: Arc<LoggerHandle>,

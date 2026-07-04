@@ -7,7 +7,7 @@ pub struct RbacHandle {
 
 impl RbacPort for RbacHandle {
     async fn enforce(&self, _subject: &str, _object: &str, _action: &str) -> Result<bool, AppError> {
-        // In a real implementation:
+        // 在真实的实现中：
         // let mut enforcer = casbin::Enforcer::new(&self.model_path, &self.policy_path).await.unwrap();
         // Ok(enforcer.enforce((subject, object, action)).unwrap())
         Ok(true)

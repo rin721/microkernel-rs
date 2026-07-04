@@ -1,8 +1,8 @@
 //! # microkernel-cache
 //!
-//! Two-level cache Generic App.
-//! L1: `moka` (local memory)
-//! L2: `redis` (distributed)
+//! 两级缓存泛型应用。
+//! L1：`moka`（本地内存）
+//! L2：`redis`（分布式）
 
 pub mod config;
 pub mod error;
@@ -16,12 +16,12 @@ use microkernel_contracts::{AppError, Archetype, CachePort, HealthStatus, System
 
 pub use port::CacheHandle;
 
-/// The cache Generic App.
+/// 缓存泛型应用。
 pub struct CacheApp {
     config: CacheConfig,
-    /// Redis connection client
+    /// Redis 连接客户端
     redis_client: Option<redis::Client>,
-    /// Shared handle exposed as the port
+    /// 暴露为端口的共享句柄
     handle: Option<Arc<CacheHandle>>,
 }
 

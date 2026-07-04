@@ -9,7 +9,7 @@ pub async fn run(config: &mut StorageConfig) -> Result<(), AppError> {
             }
         }
         StorageBackend::Local => {
-            // For local, ensure root isn't empty
+            // 对于本地，确保 root 不为空
             if config.root.is_empty() {
                 return Err(AppError::Config("root cannot be empty for local storage".to_owned()));
             }

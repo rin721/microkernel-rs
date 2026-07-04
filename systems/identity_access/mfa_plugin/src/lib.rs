@@ -1,6 +1,6 @@
 //! # microkernel-mfa
 //!
-//! Multi-factor authentication Business Plugin.
+//! 多因素认证业务插件。
 
 pub mod config;
 pub mod port;

@@ -1,31 +1,31 @@
 use crate::errors::AppError;
 
-/// Metadata for a stored object.
+/// 存储对象的元数据。
 #[derive(Debug, Clone)]
 pub struct StorageObject {
-    /// Full path/key within the storage backend.
+    /// 存储后端的完整路径/键。
     pub path: String,
-    /// Object size in bytes.
+    /// 对象大小，以字节为单位。
     pub size: u64,
-    /// MIME content-type, if known.
+    /// MIME 内容类型，如果已知的话。
     pub content_type: Option<String>,
-    /// Last-modified timestamp (Unix epoch seconds).
+    /// 最后修改的时间戳 (Unix 纪元秒)。
     pub last_modified: Option<i64>,
 }
 
-/// Port Trait for unified object storage access.
+/// 统一对象存储访问的端口 Trait。
 ///
-/// Abstracts local filesystem, S3, Alibaba OSS, Tencent COS, and any other
-/// backend supported by `opendal`. Business plugins are completely decoupled
-/// from the underlying cloud provider.
+/// 抽象了本地文件系统、S3、阿里云 OSS、腾讯云 COS，以及
+/// `opendal` 支持的任何其他后端。业务插件完全从
+/// 底层云提供商解耦。
 pub trait StoragePort: Send + Sync + 'static {
-    /// Read the entire contents of an object.
+    /// 读取对象的完整内容。
     fn read(
         &self,
         path: &str,
     ) -> impl std::future::Future<Output = Result<Vec<u8>, AppError>> + Send;
 
-    /// Write data to an object, overwriting any existing content.
+    /// 将数据写入对象，覆盖任何现有内容。
     fn write(
         &self,
         path: &str,
@@ -33,19 +33,19 @@ pub trait StoragePort: Send + Sync + 'static {
         content_type: Option<&str>,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// Delete an object. Succeeds even if the path does not exist.
+    /// 删除对象。即使路径不存在也会成功。
     fn delete(
         &self,
         path: &str,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
 
-    /// List all objects under a path prefix.
+    /// 列出路径前缀下的所有对象。
     fn list(
         &self,
         prefix: &str,
     ) -> impl std::future::Future<Output = Result<Vec<StorageObject>, AppError>> + Send;
 
-    /// Check whether an object exists at the given path.
+    /// 检查给定路径上是否存在对象。
     fn exists(
         &self,
         path: &str,

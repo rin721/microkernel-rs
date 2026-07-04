@@ -8,14 +8,13 @@ use crate::lifecycle::Teardown;
 use tokio::sync::Mutex;
 use tracing::{error, info, instrument};
 
-// ── Internal lifecycle step abstraction ──────────────────────────────────────
+// ── 内部生命周期步骤抽象 ──────────────────────────────────────
 
-/// Internal trait object interface for a single lifecycle step.
+/// 单个生命周期步骤的内部 trait 对象接口。
 ///
-/// `async_trait` is used **only here** (internal to `kernel/core`) to enable
-/// `Box<dyn LifecycleStep<E>>` storage. The public `Archetype` and `Plugin`
-/// traits in `contracts` use native `async fn`, preserving zero-cost static
-/// dispatch everywhere else.
+/// **仅在此处**（`kernel/core` 内部）使用 `async_trait`，以启用
+/// `Box<dyn LifecycleStep<E>>` 存储。`contracts` 中公共的 `Archetype` 和 `Plugin`
+/// traits 使用原生的 `async fn`，在其他所有地方保留零成本静态分发。
 #[async_trait]
 trait LifecycleStep<E: SystemEnv>: Send + Sync {
     async fn mount(&self, env: &E) -> Result<(), KernelError>;
@@ -23,13 +22,13 @@ trait LifecycleStep<E: SystemEnv>: Send + Sync {
     fn name(&self) -> &'static str;
 }
 
-// ── Archetype wrapper ─────────────────────────────────────────────────────────
+// ── Archetype 包装器 ─────────────────────────────────────────────────────────
 
-/// Wraps a concrete `Archetype` implementation behind the `LifecycleStep` vtable,
-/// performing type erasure so it can live in the `Vec<Box<dyn LifecycleStep>>`.
+/// 将具体的 `Archetype` 实现包装在 `LifecycleStep` 虚函数表后面，
+/// 执行类型擦除，以便它可以存在于 `Vec<Box<dyn LifecycleStep>>` 中。
 ///
-/// The archetype is stored in an `Arc<Mutex>` so that `Teardown` can also hold
-/// a reference to it for the `pre_stop` / `post_stop` sequence.
+/// archetype 存储在 `Arc<Mutex>` 中，以便 `Teardown` 也可以持有
+/// 对它的引用，用于 `pre_stop` / `post_stop` 序列。
 struct ArchetypeStep<A, E>
 where
     A: Archetype<E> + 'static,
@@ -75,7 +74,7 @@ where
     }
 }
 
-// ── Plugin wrapper ────────────────────────────────────────────────────────────
+// ── Plugin 包装器 ────────────────────────────────────────────────────────────
 
 struct PluginStep<P, E>
 where
@@ -114,32 +113,32 @@ where
     }
 }
 
-// ── Teardown step ─────────────────────────────────────────────────────────────
+// ── 拆卸步骤 ─────────────────────────────────────────────────────────────
 
-/// Boxed stop function stored in reverse order for teardown.
+/// 为拆卸而以相反顺序存储的装箱停止函数。
 type StopFuture = Pin<Box<dyn Future<Output = Result<(), KernelError>> + Send>>;
 type StopFn = Box<dyn Fn() -> StopFuture + Send + Sync>;
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// ── Bootstrap 引导 ─────────────────────────────────────────────────────────────────
 
-/// Orchestrates the sequential bootstrap of all Generic Apps and Business Plugins.
+/// 协调所有泛型应用和业务插件的顺序引导。
 ///
 /// # Execution order
-/// For each registered component (in registration order):
-/// 1. `mount(env)` — `pre_mount` + `post_mount` (or `on_load` for plugins)
-/// 2. `start(env)` — `pre_start` + `post_start` (or `on_start` for plugins)
+/// 对于每个注册的组件（按注册顺序）：
+/// 1. `mount(env)` — `pre_mount` + `post_mount` (或插件的 `on_load`)
+/// 2. `start(env)` — `pre_start` + `post_start` (或插件的 `on_start`)
 ///
 /// # Failure handling
-/// Any `Err` from a hook aborts the bootstrap immediately. The caller is
-/// responsible for running `Teardown` on already-started components.
+/// 钩子返回的任何 `Err` 都会立即中止引导。调用者有责任
+/// 对已启动的组件运行 `Teardown`。
 pub struct Bootstrap<E: SystemEnv> {
     steps: Vec<Box<dyn LifecycleStep<E>>>,
-    /// Stop functions registered in order; `Teardown` reverses them.
+    /// 按顺序注册的停止函数；`Teardown` 会颠倒它们。
     stop_fns: Vec<(&'static str, StopFn)>,
 }
 
 impl<E: SystemEnv> Bootstrap<E> {
-    /// Create an empty bootstrap sequence.
+    /// 创建一个空的引导序列。
     pub fn new() -> Self {
         Self {
             steps: Vec::new(),
@@ -147,13 +146,13 @@ impl<E: SystemEnv> Bootstrap<E> {
         }
     }
 
-    /// Register a Generic App with its configuration.
+    /// 使用其配置注册一个泛型应用。
     ///
     /// # Arguments
-    /// * `app`    — an already-constructed `Archetype` instance
-    /// * `config` — (consumed; only kept long enough for `pre_create` / `post_create`)
+    /// * `app`    — 一个已构建的 `Archetype` 实例
+    /// * `config` — （被消耗；只保留足够长的时间用于 `pre_create` / `post_create`）
     ///
-    /// The app is wrapped in `Arc<Mutex>` so `Teardown` can also hold a reference.
+    /// 应用被包装在 `Arc<Mutex>` 中，因此 `Teardown` 也可以持有引用。
     pub fn register_archetype<A>(&mut self, app: A) -> Arc<Mutex<A>>
     where
         A: Archetype<E> + 'static,
@@ -161,7 +160,7 @@ impl<E: SystemEnv> Bootstrap<E> {
         let name = std::any::type_name::<A>();
         let shared = Arc::new(Mutex::new(app));
 
-        // Clone for stop fn capture
+        // 克隆以捕获停止函数
         let stop_shared = Arc::clone(&shared);
         let stop_name = name;
 
@@ -172,7 +171,7 @@ impl<E: SystemEnv> Bootstrap<E> {
         });
         self.steps.push(step);
 
-        // Register stop function (pre_stop + post_stop)
+        // 注册停止函数 (pre_stop + post_stop)
         let stop_fn: StopFn = Box::new(move || {
             let app = Arc::clone(&stop_shared);
             let name = stop_name;
@@ -193,7 +192,7 @@ impl<E: SystemEnv> Bootstrap<E> {
         shared
     }
 
-    /// Register a Business Plugin.
+    /// 注册一个业务插件。
     pub fn register_plugin<P>(&mut self, plugin: P) -> Arc<Mutex<P>>
     where
         P: Plugin<E> + 'static,
@@ -214,11 +213,11 @@ impl<E: SystemEnv> Bootstrap<E> {
             let plugin = Arc::clone(&stop_shared);
             let name = name;
             Box::pin(async move {
-                // We cannot pass `env` here because we don't have it at teardown
-                // registration time. The `Teardown` struct holds env separately.
-                // For now, stop_fn holds the plugin; env must be passed separately.
-                // See `Teardown::run` for how env is threaded through.
-                let _ = plugin; // will be used by Teardown
+                // 我们不能在这里传递 `env`，因为在拆卸注册时我们没有它。
+                // `Teardown` 结构体单独持有 env。
+                // 目前，stop_fn 持有插件；env 必须单独传递。
+                // 参见 `Teardown::run` 了解 env 是如何穿透的。
+                let _ = plugin; // 将由 Teardown 使用
                 let _ = name;
                 Ok::<(), KernelError>(())
             })
@@ -228,13 +227,13 @@ impl<E: SystemEnv> Bootstrap<E> {
         shared
     }
 
-    /// Execute the full bootstrap sequence against the assembled environment.
+    /// 针对组装好的环境执行完整的引导序列。
     ///
-    /// Returns a `Teardown` pre-populated with all registered stop functions so
-    /// the caller can run teardown in reverse order on shutdown.
+    /// 返回一个预先填充了所有注册的停止函数的 `Teardown`，
+    /// 以便调用者可以在关闭时以相反顺序运行拆卸。
     ///
     /// # Errors
-    /// Returns the first `KernelError` encountered and aborts remaining steps.
+    /// 返回遇到的第一个 `KernelError` 并中止剩余步骤。
     pub async fn run(mut self, env: &E) -> Result<Teardown, KernelError> {
         for step in &self.steps {
             info!(component = step.name(), "mounting component");
@@ -246,7 +245,7 @@ impl<E: SystemEnv> Bootstrap<E> {
             info!(component = step.name(), "component ready");
         }
 
-        // Transfer stop functions to Teardown in reverse order
+        // 将停止函数以相反顺序转移到 Teardown
         self.stop_fns.reverse();
         Ok(Teardown {
             stop_fns: self.stop_fns,

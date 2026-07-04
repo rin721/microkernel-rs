@@ -8,7 +8,7 @@ pub struct DbHandle {
 
 impl DatabasePort for DbHandle {
     async fn ping(&self) -> Result<(), AppError> {
-        // sea_orm::DatabaseConnection::ping is a thing
+        // sea_orm::DatabaseConnection::ping 存在
         let _ = self.pool.ping().await.map_err(|e| AppError::Io(e.to_string()))?;
         Ok(())
     }
