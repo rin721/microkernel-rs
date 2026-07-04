@@ -40,14 +40,40 @@ pub trait AppLifecycle {
     /// 5. 实例挂载后接口 (内核调用)
     async fn post_mount(&self) -> Result<(), AppError>;
 
-    /// 6. 配置重载后接口 (内核调用)
+    /// 6. 实例启动前接口 (内核调用)
+    /// 在所有应用完成 mount（依赖注入就绪）后，内核统一调用
+    async fn pre_start(&self) -> Result<(), AppError> { Ok(()) }
+
+    /// 7. 实例启动后接口 (内核调用)
+    /// 可以在此启动常驻后台任务或开启网络监听
+    async fn post_start(&self) -> Result<(), AppError> { Ok(()) }
+
+    /// 8. 配置重载前校验接口 (内核调用)
+    /// 允许应用校验新配置，若返回错误，则内核中止此次配置热更新
+    async fn pre_reload(&self, _new_config: &Self::Config) -> Result<(), AppError> { Ok(()) }
+
+    /// 9. 配置重载后接口 (内核调用)
     /// 当内核检测到配置发生变动且属于本应用时调用
     async fn post_reload(&self, new_config: &Self::Config) -> Result<(), AppError>;
 
-    /// 7. 实例停止前接口 (内核调用)
+    /// 10. 健康探测接口 (内核调用)
+    /// 内核定期轮询应用的存活状态。默认实现返回健康。
+    async fn health_check(&self) -> Result<HealthStatus, AppError> { Ok(HealthStatus::Healthy) }
+
+    /// 11. 严重异常报告接口 (应用主动调用/内核捕获回调)
+    /// 应用内部如果发生不可恢复异常，通过此接口报告
+    async fn on_fatal_error(&self, _err: &AppError) {}
+
+    /// 12. 挂起接口 (内核调用，用于高级流控与维护)
+    async fn suspend(&self) -> Result<(), AppError> { Ok(()) }
+
+    /// 13. 恢复接口 (内核调用，用于高级流控与维护)
+    async fn resume(&self) -> Result<(), AppError> { Ok(()) }
+
+    /// 14. 实例停止前接口 (内核调用)
     async fn pre_stop(&self) -> Result<(), AppError>;
 
-    /// 8. 实例停止后接口 (内核调用)
+    /// 15. 实例停止后接口 (内核调用)
     async fn post_stop(&self) -> Result<(), AppError>;
 }
 ```
@@ -59,7 +85,11 @@ pub trait AppLifecycle {
 1.  **合并配置**：通过调用 `default_config` 和合并用户配置来获取最终参数。
 2.  **创建实例**：先调用 `pre_create` 进行准备，然后实例化应用底层资源，接着调用 `post_create`。
 3.  **挂载实例**：调用 `pre_mount` 进行如数据库自动迁移等工作，随后将其注册到全局依赖注入容器，最后调用 `post_mount`。
-4.  **资源清理**：系统退出时，内核调度执行 `pre_stop` 实现优雅停机，然后执行 `post_stop` 完成日志上报等最后清理工作。
+4.  **统一启动 (Start Phase)**：当所有应用挂载完毕，依赖图完全构建后，内核调度所有应用的 `pre_start`，紧接着调度 `post_start` 从而安全拉起所有业务循环。
+5.  **运行期维护**：
+    *   **监控**：内核后台循环调度 `health_check` 获取各个组件状态。
+    *   **配置热更新**：当配置发生变更，先调用 `pre_reload` 验证，验证通过后调用 `post_reload` 执行。
+6.  **资源清理**：系统退出时，内核调度执行 `pre_stop` 实现优雅停机，然后执行 `post_stop` 完成日志上报等最后清理工作。
 
 ## 3. 插件系统设计 (Plugin System)
 

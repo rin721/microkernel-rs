@@ -73,6 +73,25 @@ impl AppLifecycle for DatabaseApp {
         Ok(())
     }
 
+    /// (可选) 健康探测逻辑，覆盖默认实现
+    async fn health_check(&self) -> Result<HealthStatus, AppError> {
+        // 场景：执行 SELECT 1 探测数据库是否存活
+        if let Some(pool) = &self.pool {
+            // let _ = sqlx::query("SELECT 1").execute(pool).await?;
+            tracing::debug!("执行数据库健康检查: OK");
+            Ok(HealthStatus::Healthy)
+        } else {
+            Ok(HealthStatus::Unhealthy)
+        }
+    }
+
+    /// (可选) 配置重载前校验逻辑
+    async fn pre_reload(&self, new_config: &Self::Config) -> Result<(), AppError> {
+        // 场景：在应用新配置前检查 URL 是否合法
+        tracing::info!("预检查新配置的合法性...");
+        Ok(())
+    }
+
     /// 6. 重载逻辑
     async fn post_reload(&self, new_config: &Self::Config) -> Result<(), AppError> {
         // 场景：判断数据库连接池参数是否需要动态扩缩容
@@ -100,4 +119,4 @@ impl AppLifecycle for DatabaseApp {
 
 当上述代码实现完成后，通用数据库应用就完成了自身的职责闭环。
 
-接下来，系统本体 (Host Proxy) 会在启动时自动读取到 `DatabaseApp` 对应的类型，并通过内部的 `mount_database_app` 等统一工作流编排机制，自动代理触发上述 8 个钩子，从而实现对底层框架启停的完全控制。应用开发者无需在 main 函数中手动编排这些调用的顺序。
+接下来，系统本体 (Host Proxy) 会在启动时自动读取到 `DatabaseApp` 对应的类型，并通过内部的 `mount_database_app` 等统一工作流编排机制，自动代理触发这些钩子，从而实现对底层框架启停的完全控制。应用开发者无需在 main 函数中手动编排这些调用的顺序。
