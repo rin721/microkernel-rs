@@ -5,18 +5,18 @@
 ## 1. 目标与机制
 
 *   **职责**：为当前系统封装实现数据库应用为通用库（管理连接池）。
-*   **接入方式**：作为“通用应用库”，通过实现系统本体在 `kernel/lifecycle` 层定义的 `AppLifecycle` 约束接口，向内核注册。
+*   **接入方式**：作为“通用应用库”，通过实现系统本体在 `kernel/lifecycle` 层定义的 `Archetype` 约束接口，向内核注册。
 
 ## 2. 接口实现规范 (Implementation of Kernel Contract)
 
 在 [微内核核心架构设计](../architecture/microkernel.md) 中已明确声明：**生命周期钩子 Trait 是内核的核心设计，属于系统本体用来约束新增库的霸王条款。应用本身不可随意定义，只需按约实现即可。**
 
-下面是数据库应用具体实现内核 `AppLifecycle` 接口的伪代码演示：
+下面是数据库应用具体实现内核 `Archetype` 接口的伪代码演示：
 
 ```rust
 use async_trait::async_trait;
 // 从内核模块引入统一生命周期契约
-use crate::kernel::lifecycle::{AppLifecycle, AppError}; 
+use crate::kernel::lifecycle::{Archetype, AppError}; 
 
 /// 数据库配置定义
 pub struct DbConfig {
@@ -33,7 +33,7 @@ pub struct DatabaseApp {
 
 /// 实现系统本体强制约束的生命周期 Trait
 #[async_trait]
-impl AppLifecycle for DatabaseApp {
+impl Archetype for DatabaseApp {
     type Config = DbConfig;
 
     /// 1. 默认配置实现

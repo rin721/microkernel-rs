@@ -12,7 +12,7 @@
 
 每个应用（如数据库应用、缓存服务等）都需要由内核进行完整的生命周期与依赖管理。
 
-### 2.1 核心约束：通用应用生命周期契约 (AppLifecycle Trait)
+### 2.1 核心约束：通用应用生命周期契约 (Archetype Trait)
 
 **极其重要**：应用钩子（Hooks）都是微内核在 `kernel/lifecycle` 层专门定义的**核心接口契约**。它们的作用是“约束并代理新增应用通用库”，**绝对不应该由具体应用自身来定义或更改**。所有试图接入内核的通用库都必须实现此 Trait。
 
@@ -21,7 +21,7 @@ use async_trait::async_trait;
 
 /// 通用应用生命周期契约 (由系统内核定义并强制约束)
 #[async_trait]
-pub trait AppLifecycle {
+pub trait Archetype {
     type Config;
 
     /// 1. 为通用库提供默认配置接口

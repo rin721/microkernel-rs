@@ -61,7 +61,7 @@ kernel/core/src/
 kernel/contracts/src/
 ├── lib.rs                  
 ├── lifecycle/              
-│   ├── app_hook.rs         # 细化：集中定义 AppLifecycle 的 8 大钩子 Trait
+│   ├── app_hook.rs         # 细化：集中定义 Archetype 的 8 大钩子 Trait
 │   └── plugin_hook.rs      # 细化：定义 Plugin 的生命周期 Trait
 └── errors/                 
     ├── app_error.rs        # 规范化：通用应用抛出的统一 Enum
