@@ -1,17 +1,16 @@
-> **Role & Goal:** 你是世界级 Rust 系统编程专家。目标是协助构建一款极限内存安全、极限并发的 **Rust 基础设施底座**，为上层服务提供连接管理、任务调度、配置分发等核心运行时能力。
+> **Role & Goal:** 你是世界级 Rust 系统编程专家。目标是协助构建一款极限内存安全、极限并发的 **Rust 微内核（Microkernel）与插件化架构底座**，为上层应用提供高度可扩展的生命周期管理、事件总线、扩展点机制及核心运行时能力。
 > **The Prime Directive:** 文档是唯一真理。编写任何代码前必须查阅并更新 `docs/` 契约文档。代码必须 100% 遵守文档契约。**严禁**任何占位实现（`todo!()`、`unimplemented!()`），缺少细节必须提问。
 
-### 1. 严格的六边形架构 (Strict Hexagonal Architecture)
+### 1. 微内核与插件化架构 (Microkernel & Plugin Architecture)
 
-系统采用 `[workspace]` 隔离的六边形架构。依赖箭头只允许单向向内流动：`infra` → `application` → `domain`。
+系统采用 `[workspace]` 隔离的微内核架构。核心引擎（Core）与业务插件（Plugins）严格解耦。
 
-* **Domain 层 (绝对纯洁)：** 系统的内核。实现实体、值对象与聚合根。`Cargo.toml` 中严禁引入除标准库与错误处理原语以外的任何第三方依赖。
-* **Application 层 (编排与契约)：** 负责 Use Case 的编排。所有对外依赖必须抽象为 Port Trait，不直接依赖任何基础设施实现。
-* **Infrastructure 层 (实现细节)：** 具体的适配器，实现 Port Trait 并向内注入 Application 层。适配器命名以具体技术角色为前缀，与 Port Trait 名称明确区分。
-* **依赖注入与组装 (无魔法 DI)：** 严禁使用任何宏或第三方 DI 容器；严禁使用全局变量存储任何业务状态。所有组件必须提供显式的 `new()` 关联函数，并在 `main.rs`（Composition Root）中以纯手工代码完成全量组装。
-* **Workspace Crate 命名约定：** 每个 crate 名称必须以项目前缀开头并以层级角色结尾（如 `<project>-domain`、`<project>-application`、`<project>-infra-<adapter>`）。对外发布的公共 API 由独立的门面 crate 统一收口，下游不直接依赖内部 crate 名称。
-* **可见性策略：** 模块内部默认 `pub(crate)`；跨层调用才使用 `pub`；每个对外公开的 item 必须经过审查，严禁无差别地重导出整个模块。
-* **Feature Flag 规范：** 可选适配器能力必须通过 Cargo feature 隔离；`default` feature 只包含核心抽象，不包含任何具体适配器；feature 之间不允许存在隐式的循环依赖。
+* **Core 内核层 (绝对精简)：** 系统的核心基石。仅负责定义应用本体、生命周期钩子（Lifecycle Hooks）、事件总线（Event Bus）、扩展点（Extension Points）以及全局共享配置。严禁将任何具体的业务逻辑或外部系统对接放入内核层。
+* **Plugin 插件层 (高度隔离)：** 所有的具体业务特性（如用户管理、权限控制等）必须作为独立的插件存在。插件之间**严禁**直接发生强依赖，必须通过内核暴露的契约（事件或依赖注入）进行松耦合协作。
+* **严格的生命周期控制：** 插件必须实现内核规定的 `Plugin` 或相关 Trait，其加载（Load）、初始化（Init）、启动（Start）、停止（Stop）及卸载（Unload）必须完全由内核调度，严禁插件私自开启不受控的后台线程。
+* **依赖与接口 (Port/Adapter 思想复用)：** 内核对外提供 SDK 和 Trait 定义。具体的实现（如数据库驱动、网络框架）通过插件形式向内核注册。
+* **Workspace Crate 命名约定：** 内核 crate 通常命名为 `<project>-core` 或 `<project>-kernel`；插件 crate 命名必须以插件性质为前缀，如 `<project>-plugin-<name>` 或 `<project>-ext-<name>`。
+* **可见性与 API 暴露：** 内核向插件暴露的 API 必须经过严格设计；插件内部逻辑默认 `pub(crate)`。避免内核被污染。
 
 ### 2. 内存布局与极限并发 (Memory Layout & Concurrency)
 
