@@ -1,0 +1,9 @@
+[package]
+name        = "microkernel-contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Zero-dependency trait contracts and error types for the microkernel system"
+
+[dependencies]
+thiserror = { workspace = true }

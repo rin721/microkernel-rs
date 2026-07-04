@@ -1,0 +1,27 @@
+[package]
+name        = "microkernel-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Host application that stitches together the microkernel, apps, and plugins"
+
+[dependencies]
+microkernel-contracts = { workspace = true }
+microkernel-core      = { workspace = true }
+microkernel-macros    = { workspace = true }
+
+# Generic Apps
+microkernel-logger   = { path = "../systems/observability/logger_app" }
+microkernel-database = { path = "../systems/data_plane/database_app" }
+microkernel-cache    = { path = "../systems/data_plane/cache_app" }
+microkernel-storage  = { path = "../systems/data_plane/storage_app" }
+
+# Business Plugins
+microkernel-auth     = { path = "../systems/identity_access/auth_plugin" }
+microkernel-rbac     = { path = "../systems/identity_access/rbac_plugin" }
+microkernel-mfa      = { path = "../systems/identity_access/mfa_plugin" }
+microkernel-metrics  = { path = "../systems/observability/metrics_plugin" }
+
+tokio     = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }

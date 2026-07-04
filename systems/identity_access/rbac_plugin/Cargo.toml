@@ -1,0 +1,15 @@
+[package]
+name        = "microkernel-rbac"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "RBAC/ABAC access control Business Plugin (casbin)"
+
+[dependencies]
+microkernel-contracts = { workspace = true }
+casbin    = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+serde     = { workspace = true }
+tokio     = { workspace = true }
+microkernel-macros = { version = "0.1.0", path = "../../../kernel/macros" }

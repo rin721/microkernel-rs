@@ -1,0 +1,13 @@
+[package]
+name        = "microkernel-database"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Relational database Generic App (sea-orm + sqlx-postgres)"
+
+[dependencies]
+microkernel-contracts = { workspace = true }
+sea-orm   = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+serde     = { workspace = true }

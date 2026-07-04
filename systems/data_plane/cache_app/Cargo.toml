@@ -1,0 +1,14 @@
+[package]
+name        = "microkernel-cache"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Two-level cache Generic App (redis L2 + moka L1)"
+
+[dependencies]
+microkernel-contracts = { workspace = true }
+redis     = { workspace = true }
+moka      = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+serde     = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name        = "microkernel-metrics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Prometheus metrics Business Plugin (metrics + metrics-exporter-prometheus)"
+
+[dependencies]
+microkernel-contracts       = { workspace = true }
+metrics                     = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+thiserror                   = { workspace = true }
+tracing                     = { workspace = true }
+serde                       = { workspace = true }
+tokio                       = { workspace = true }
+microkernel-macros = { version = "0.1.0", path = "../../../kernel/macros" }

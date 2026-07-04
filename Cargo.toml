@@ -1,6 +1,82 @@
-[package]
-name = "microkernel-rs"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
+members = [
+    # Kernel layer
+    "kernel/contracts",
+    "kernel/core",
+    "kernel/macros",
 
-[dependencies]
+    # Data plane generic apps
+    "systems/data_plane/database_app",
+    "systems/data_plane/cache_app",
+    "systems/data_plane/storage_app",
+
+    # Identity & access plugins
+    "systems/identity_access/auth_plugin",
+    "systems/identity_access/rbac_plugin",
+    "systems/identity_access/mfa_plugin",
+
+    # Observability
+    "systems/observability/logger_app",
+    "systems/observability/metrics_plugin",
+
+    # Host entry point
+    "host",
+]
+
+[workspace.package]
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT OR Apache-2.0"
+repository  = "https://github.com/rin721/microkernel-rs"
+
+# ── Shared dependency versions ───────────────────────────────────────────────
+[workspace.dependencies]
+# Kernel
+microkernel-contracts = { path = "kernel/contracts" }
+microkernel-core      = { path = "kernel/core" }
+microkernel-macros    = { path = "kernel/macros" }
+
+# Generic apps (path references for workspace members)
+microkernel-database = { path = "systems/data_plane/database_app" }
+microkernel-cache    = { path = "systems/data_plane/cache_app" }
+microkernel-storage  = { path = "systems/data_plane/storage_app" }
+microkernel-logger   = { path = "systems/observability/logger_app" }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Async trait object support (used internally in kernel/core only)
+async-trait = "0.1"
+
+# Proc-macro helpers
+syn       = { version = "2", features = ["full"] }
+quote     = "1"
+proc-macro2 = "1"
+
+# Data plane
+sea-orm   = { version = "1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+redis     = { version = "0.26", features = ["tokio-comp", "connection-manager"] }
+moka      = { version = "0.12", features = ["future"] }
+opendal   = { version = "0.50", features = ["services-fs", "services-s3"] }
+
+# Identity
+jsonwebtoken = "9"
+zeroize      = { version = "1", features = ["derive"] }
+casbin       = { version = "2", features = ["runtime-tokio"] }
+totp-rs      = { version = "5", features = ["qr"] }
+qrcode       = "0.14"
+
+# Observability
+tracing             = "0.1"
+tracing-subscriber  = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender    = "0.2"
+metrics             = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# Error handling
+thiserror = "2"
+
+# Serialization
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"

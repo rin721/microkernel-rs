@@ -1,0 +1,13 @@
+[package]
+name        = "microkernel-storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Unified object storage Generic App (opendal: S3 / local FS / OSS)"
+
+[dependencies]
+microkernel-contracts = { workspace = true }
+opendal   = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+serde     = { workspace = true }
